@@ -120,12 +120,26 @@ jobs:
           cd ../..
           zip -r YTMusicUltimate.ipa Payload
           rm -rf Payload    
+          
+      - name: Upload Artifact to Catbox
+        run: |
+          RESPONSE=$(curl -F "reqtype=fileupload" -F "fileToUpload=@${{ github.workspace }}/main/packages/${{ steps.build_package.outputs.package }}" https://catbox.moe/user/api.php)
+          CATBOX_URL=$(echo $RESPONSE | grep -o -E 'https://files.catbox.moe/[^"]*')
+          echo "Uploaded artifact to $CATBOX_URL"
+          CATBOX_FILE=$(echo $CATBOX_URL | sed 's|https://files.catbox.moe/||')
+          # Pass Catbox URL to the release steps
+          echo "CATBOX_FILE=$CATBOX_FILE" >> $GITHUB_ENV
+          echo "CATBOX_URL=$CATBOX_URL" >> $GITHUB_ENV
+          
+      - name: Job Summary
+        run: |
+          echo -e '### 📺 Build Complete' >> $GITHUB_STEP_SUMMARY
 
-      - name: Create Release
-        id: create_release
-        uses: softprops/action-gh-release@v2.0.1
-        with:
-          tag_name: YTMusicUltimate-v${{ github.run_number }}
-          name: YTMusicUltimate-v${{ github.run_number }}
-          files: main/packages/*.ipa
-          draft: true
+      - name: Job Summary - Artifact Upload
+        run: |
+          echo -e '### 📦 Artifact Upload\n\nThe artifact was uploaded successfully! Refresh and [scroll down](#artifacts) to view the artifact. Note that you must be signed in to GitHub to download it.' >> $GITHUB_STEP_SUMMARY
+
+      - name: Job Summary - Catbox Upload
+
+        run: |
+          echo -e '### 🐱 Catbox Upload\n\nThe Catbox upload was successful! Here is a permanent shareable link: '$CATBOX_URL >> $GITHUB_STEP_SUMMARY
